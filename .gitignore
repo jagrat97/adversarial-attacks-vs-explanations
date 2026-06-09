@@ -1,0 +1,10 @@
+.venv/
+lectures/
+install.log
+.claude/
+figures/demo.png
+__pycache__/
+*.pyc
+.DS_Store
+.ipynb_checkpoints/
+*.egg-info/

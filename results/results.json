@@ -1,0 +1,363 @@
+{
+  "model": "torchvision resnet50 (IMAGENET1K_V2)",
+  "device": "mps",
+  "n_images": 12,
+  "names": [
+    "African_elephant",
+    "airliner",
+    "broccoli",
+    "flamingo",
+    "giant_panda",
+    "golden_retriever",
+    "goldfish",
+    "lemon",
+    "school_bus",
+    "sports_car",
+    "tabby",
+    "zebra"
+  ],
+  "clean_accuracy_vs_filename": 0.9166666666666666,
+  "config": {
+    "eps_main": "4/255",
+    "pgd_steps": 10,
+    "detector_sigma": 0.05,
+    "detector_n_noise": 32
+  },
+  "experiment_A_attack_success": {
+    "epsilons": [
+      "0",
+      "1/255",
+      "2/255",
+      "4/255",
+      "8/255",
+      "16/255"
+    ],
+    "fgsm_success": [
+      0.0,
+      0.1666666716337204,
+      0.1666666716337204,
+      0.1666666716337204,
+      0.1666666716337204,
+      0.25
+    ],
+    "pgd_success": [
+      0.0,
+      0.4166666567325592,
+      0.75,
+      0.8333333134651184,
+      0.9166666865348816,
+      1.0
+    ],
+    "fgsm_conf": [
+      0.4495096206665039,
+      0.13456790149211884,
+      0.13020896911621094,
+      0.15136098861694336,
+      0.19435563683509827,
+      0.24892184138298035
+    ],
+    "pgd_conf": [
+      0.4495096206665039,
+      0.04166216403245926,
+      0.007603677920997143,
+      0.0020732320845127106,
+      0.0012927594361826777,
+      0.00012079425505362451
+    ]
+  },
+  "experiment_B_explanation_shift": {
+    "eps": "4/255",
+    "pgd_flip_rate": 0.8333333134651184,
+    "gradcam": {
+      "cosine": 0.658366366559384,
+      "spearman": 0.4795908358772984,
+      "topk_iou": 0.21652730450578714,
+      "per_image": [
+        {
+          "cosine": 0.7167749021007286,
+          "spearman": 0.732681110899842,
+          "topk_iou": 0.16874344940025618
+        },
+        {
+          "cosine": 0.34654328088887143,
+          "spearman": -0.25885445770382753,
+          "topk_iou": 0.05441176470588234
+        },
+        {
+          "cosine": 0.8275205361406558,
+          "spearman": 0.8003940030703919,
+          "topk_iou": 0.2781456953642384
+        },
+        {
+          "cosine": 0.8160435636509498,
+          "spearman": 0.7721418757723153,
+          "topk_iou": 0.3717878622197922
+        },
+        {
+          "cosine": 0.566580172042533,
+          "spearman": 0.43801837259975873,
+          "topk_iou": 0.16751977664029777
+        },
+        {
+          "cosine": 0.6901764758657915,
+          "spearman": 0.26815164338603753,
+          "topk_iou": 0.3200052610811521
+        },
+        {
+          "cosine": 0.8292535289568654,
+          "spearman": 0.8194983419747753,
+          "topk_iou": 0.2726350494547299
+        },
+        {
+          "cosine": 0.5165305384162974,
+          "spearman": 0.26302898689038906,
+          "topk_iou": 0.12017837235228537
+        },
+        {
+          "cosine": 0.8924482598488984,
+          "spearman": 0.8722248701172391,
+          "topk_iou": 0.46126965637740236
+        },
+        {
+          "cosine": 0.429305401190452,
+          "spearman": -0.15443741679421674,
+          "topk_iou": 0.18544767304512164
+        },
+        {
+          "cosine": 0.3599511937579512,
+          "spearman": 0.32761963936027105,
+          "topk_iou": 0.034489858951920103
+        },
+        {
+          "cosine": 0.9092685458526117,
+          "spearman": 0.8746230609546047,
+          "topk_iou": 0.16369323447636697
+        }
+      ]
+    },
+    "ig": {
+      "cosine": 0.6629180506689504,
+      "spearman": 0.5927164383916051,
+      "topk_iou": 0.22544551535065596,
+      "per_image": [
+        {
+          "cosine": 0.6322098363777454,
+          "spearman": 0.48564128350294794,
+          "topk_iou": 0.18530766505255694
+        },
+        {
+          "cosine": 0.5313321938341531,
+          "spearman": 0.5625217305109403,
+          "topk_iou": 0.1583564173591874
+        },
+        {
+          "cosine": 0.46524401854501507,
+          "spearman": 0.46242045135906035,
+          "topk_iou": 0.08862132552337562
+        },
+        {
+          "cosine": 0.7236653578195328,
+          "spearman": 0.7614984028944192,
+          "topk_iou": 0.3285676462801165
+        },
+        {
+          "cosine": 0.7143415638995355,
+          "spearman": 0.6931333077812054,
+          "topk_iou": 0.27538441987546064
+        },
+        {
+          "cosine": 0.7170365389718784,
+          "spearman": 0.6660132514954329,
+          "topk_iou": 0.34368724059445704
+        },
+        {
+          "cosine": 0.6828237049474428,
+          "spearman": 0.641252774899333,
+          "topk_iou": 0.2581170866240441
+        },
+        {
+          "cosine": 0.676428987365785,
+          "spearman": 0.36330861999993824,
+          "topk_iou": 0.1532980923925534
+        },
+        {
+          "cosine": 0.716877078392962,
+          "spearman": 0.7311509673011438,
+          "topk_iou": 0.3141285845227183
+        },
+        {
+          "cosine": 0.6481797930546285,
+          "spearman": 0.48602288796608717,
+          "topk_iou": 0.17106184364060673
+        },
+        {
+          "cosine": 0.6667714690601628,
+          "spearman": 0.42671325773737273,
+          "topk_iou": 0.15875764923219024
+        },
+        {
+          "cosine": 0.7801060657585636,
+          "spearman": 0.8329203252513802,
+          "topk_iou": 0.2700582131106049
+        }
+      ]
+    }
+  },
+  "experiment_C_detection": {
+    "sigma": 0.05,
+    "n_noise": 32,
+    "auc": 0.9097222222222222,
+    "clean_inst": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.875,
+      0.0
+    ],
+    "adv_inst": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.96875,
+      1.0,
+      1.0,
+      0.0,
+      1.0,
+      1.0,
+      0.0
+    ],
+    "clean_inst_mean": 0.07291666666666667,
+    "adv_inst_mean": 0.8307291666666666
+  },
+  "examples": [
+    {
+      "name": "African_elephant",
+      "true": "African elephant",
+      "clean_pred": "African elephant",
+      "clean_conf": 0.681,
+      "adv_pred": "Indian elephant",
+      "adv_conf": 0.117,
+      "linf": 0.0157,
+      "flipped": true
+    },
+    {
+      "name": "airliner",
+      "true": "airliner",
+      "clean_pred": "airliner",
+      "clean_conf": 0.491,
+      "adv_pred": "parachute",
+      "adv_conf": 0.289,
+      "linf": 0.0157,
+      "flipped": true
+    },
+    {
+      "name": "broccoli",
+      "true": "broccoli",
+      "clean_pred": "broccoli",
+      "clean_conf": 0.429,
+      "adv_pred": "leaf beetle",
+      "adv_conf": 0.012,
+      "linf": 0.0157,
+      "flipped": true
+    },
+    {
+      "name": "flamingo",
+      "true": "flamingo",
+      "clean_pred": "flamingo",
+      "clean_conf": 0.569,
+      "adv_pred": "spider web",
+      "adv_conf": 0.998,
+      "linf": 0.0157,
+      "flipped": true
+    },
+    {
+      "name": "giant_panda",
+      "true": "giant panda",
+      "clean_pred": "giant panda",
+      "clean_conf": 0.555,
+      "adv_pred": "tennis ball",
+      "adv_conf": 0.007,
+      "linf": 0.0157,
+      "flipped": true
+    },
+    {
+      "name": "golden_retriever",
+      "true": "golden retriever",
+      "clean_pred": "golden retriever",
+      "clean_conf": 0.493,
+      "adv_pred": "malinois",
+      "adv_conf": 0.996,
+      "linf": 0.0157,
+      "flipped": true
+    },
+    {
+      "name": "goldfish",
+      "true": "goldfish",
+      "clean_pred": "goldfish",
+      "clean_conf": 0.493,
+      "adv_pred": "digital clock",
+      "adv_conf": 0.009,
+      "linf": 0.0157,
+      "flipped": true
+    },
+    {
+      "name": "lemon",
+      "true": "lemon",
+      "clean_pred": "lemon",
+      "clean_conf": 0.342,
+      "adv_pred": "marmot",
+      "adv_conf": 0.875,
+      "linf": 0.0157,
+      "flipped": true
+    },
+    {
+      "name": "school_bus",
+      "true": "school bus",
+      "clean_pred": "school bus",
+      "clean_conf": 0.42,
+      "adv_pred": "school bus",
+      "adv_conf": 0.008,
+      "linf": 0.0157,
+      "flipped": false
+    },
+    {
+      "name": "sports_car",
+      "true": "sports car",
+      "clean_pred": "sports car",
+      "clean_conf": 0.334,
+      "adv_pred": "beach wagon",
+      "adv_conf": 0.652,
+      "linf": 0.0157,
+      "flipped": true
+    },
+    {
+      "name": "tabby",
+      "true": "tabby",
+      "clean_pred": "Egyptian cat",
+      "clean_conf": 0.196,
+      "adv_pred": "paper towel",
+      "adv_conf": 0.927,
+      "linf": 0.0157,
+      "flipped": true
+    },
+    {
+      "name": "zebra",
+      "true": "zebra",
+      "clean_pred": "zebra",
+      "clean_conf": 0.391,
+      "adv_pred": "zebra",
+      "adv_conf": 0.008,
+      "linf": 0.0157,
+      "flipped": false
+    }
+  ]
+}
