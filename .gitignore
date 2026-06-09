@@ -3,6 +3,8 @@ lectures/
 install.log
 .claude/
 figures/demo.png
+*.pdf
+/tmp/
 __pycache__/
 *.pyc
 .DS_Store

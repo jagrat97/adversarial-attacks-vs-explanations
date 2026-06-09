@@ -8,7 +8,9 @@ A self-contained study that **bridges two course lectures** — *Lecture 07 (Rob
 
 > When an imperceptible adversarial perturbation fools an image classifier, what happens to the **explanation** of its decision — and can the explanation's own fragility be used to **detect** the attack?
 
-📊 **Slides:** [`MRP_presentation.pdf`](MRP_presentation.pdf) · 🎥 **Demo video:** *(add link)* · 🧪 **Reproduce:** `python src/run_experiments.py`
+🖥️ **Slide deck (live):** **https://jagrat97.github.io/adversarial-attacks-vs-explanations/** · 🎥 **Demo video:** *(add link)* · 🧪 **Reproduce:** `python src/run_experiments.py`
+
+> The deck is a single self-contained `index.html` (custom slide engine — arrow keys to navigate, `F` for fullscreen). Open it locally or use the live link above.
 
 ---
 
@@ -66,7 +68,9 @@ pip install -r requirements.txt
 
 python src/fetch_images.py        # download the 12 sample images (one-time)
 python src/run_experiments.py     # -> figures/*.png + results/results.json
-python src/make_slides.py          # -> MRP_presentation.pdf
+
+# the slide deck is index.html — open it in any browser (or use the live link above)
+open index.html                   # macOS;  or just double-click it
 
 # Interactive single-image demo (used in the video):
 python src/demo.py --image giant_panda --attack pgd --eps 4/255
@@ -78,21 +82,19 @@ Runs on CPU, CUDA, or Apple-Silicon **MPS** (auto-detected).
 ## Repository layout
 
 ```
+index.html            the ~10-minute slide deck (open in a browser / hosted on Pages)
 src/
   data.py             model + image loading ([0,1] space, ImageNet labels)
   attacks.py          FGSM + PGD (from scratch)
   explain.py          Grad-CAM (from scratch) + Integrated Gradients (Captum)
   metrics.py          explanation-shift metrics + instability detector + AUC
   run_experiments.py  the full study -> figures/ + results/results.json
-  make_slides.py      builds MRP_presentation.pdf from the real results
   demo.py             single-image live demo (attack + explanation + verdict)
   fetch_images.py     downloads the sample images
 images/               12 ImageNet sample images (+ labels.json)
-figures/              generated result figures
+figures/              generated result figures (used by the deck + this README)
 results/results.json  all numbers behind the figures/slides
-MRP_presentation.pdf  the ~10-minute slide deck
 DEMO_SCRIPT.md        narration script for the recorded demo
-links.json            repo + YouTube links used by the slides
 ```
 
 ## Limitations
@@ -114,3 +116,4 @@ Small sample (12 images, one architecture); white-box, L∞ attacks only; the de
 
 **Course:** [github.com/fatheral/ai-intro-course](https://github.com/fatheral/ai-intro-course) — Lecture 07 (Robustness), Lecture 09 (Interpretability & Explainability).
 **Data:** sample images from [EliSchwartz/imagenet-sample-images](https://github.com/EliSchwartz/imagenet-sample-images).
+**Deck design** follows Anthropic's [frontend-design skill](https://github.com/anthropics/skills/tree/main/skills/frontend-design).

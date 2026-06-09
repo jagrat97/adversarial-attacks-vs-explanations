@@ -1,8 +1,9 @@
 # Demo / presentation script (~10 minutes)
 
-A narration + action plan for the recorded YouTube walkthrough. Open
-`MRP_presentation.pdf` full-screen and keep a terminal ready in the project
-folder (`source .venv/bin/activate` first). Timings are a guide.
+A narration + action plan for the recorded YouTube walkthrough. Open the deck
+`index.html` in your browser (or the live GitHub Pages link) and press **F** for
+fullscreen; keep a terminal ready in the project folder (`source .venv/bin/activate`
+first). Navigate with the arrow keys. Timings are a guide.
 
 > Tip for recording: QuickTime (macOS) → File → New Screen Recording, or OBS.
 > Show the slides, and cut to the terminal for the live demo around 3:30.
@@ -91,6 +92,6 @@ python src/demo.py --image golden_retriever --attack fgsm --eps 16/255   # FGSM 
 
 ### After recording
 1. Upload to YouTube (Unlisted is fine for grading).
-2. Put the link in `links.json` → `"youtube"`, then rerun `python src/make_slides.py`
-   so the deck shows the real link, and update the README badge.
-3. Commit & push.
+2. Add the YouTube URL in two spots: the `DEMO` line in `index.html` and the
+   "Demo video" badge in `README.md`.
+3. Commit & push — the live deck on GitHub Pages updates automatically.

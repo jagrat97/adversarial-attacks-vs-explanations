@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Do Explanations Survive Attacks? — MRP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,500&family=Sora:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#07080e; --bg2:#0c0e18; --panel:#11131f; --panel2:#161a29;
+    --ink:#edf0f8; --muted:#8a92a8; --faint:#525a72;
+    --clean:#36e7c4;   /* clean / defense */
+    --adv:#ff4d68;     /* adversarial */
+    --amber:#f5b13d;   /* secondary (IG) */
+    --line:rgba(126,146,210,.07);
+    --serif:'Fraunces',Georgia,serif;
+    --sans:'Sora',system-ui,sans-serif;
+    --mono:'Space Mono',monospace;
+    --s:1;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html,body{height:100%; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); -webkit-font-smoothing:antialiased;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; overflow:hidden}
+
+  /* ---------------- deck engine ---------------- */
+  #deck{position:fixed; inset:0; overflow:hidden}
+  .slide{
+    position:absolute; left:50%; top:50%; width:1280px; height:720px;
+    transform:translate(-50%,-50%) scale(var(--s));
+    opacity:0; visibility:hidden; transition:opacity .45s ease;
+    padding:74px 88px; overflow:hidden;
+    background-color:var(--bg);
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px),
+      radial-gradient(120% 90% at 86% -10%, rgba(255,77,104,.13), transparent 55%),
+      radial-gradient(120% 110% at -8% 110%, rgba(54,231,196,.12), transparent 55%);
+    background-size:38px 38px, 38px 38px, 100% 100%, 100% 100%;
+  }
+  .slide.active{opacity:1; visibility:visible}
+  .slide::after{ /* grain */
+    content:""; position:absolute; inset:0; pointer-events:none; opacity:.05;
+    mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .slide > *{position:relative; z-index:1}
+
+  /* reveal */
+  .r{opacity:0; transform:translateY(18px);
+     transition:opacity .6s ease, transform .6s cubic-bezier(.2,.75,.2,1);
+     transition-delay:var(--d,0s)}
+  .slide.active .r{opacity:1; transform:none}
+
+  /* ---------------- type ---------------- */
+  .kicker{font-family:var(--mono); font-size:14px; letter-spacing:.32em;
+    text-transform:uppercase; color:var(--adv); display:flex; align-items:center; gap:12px}
+  .kicker::before{content:""; width:30px; height:2px; background:var(--adv); display:inline-block}
+  .kicker.mint{color:var(--clean)} .kicker.mint::before{background:var(--clean)}
+  .kicker.amber{color:var(--amber)} .kicker.amber::before{background:var(--amber)}
+  h1{font-family:var(--serif); font-weight:900; line-height:.96; letter-spacing:-.02em}
+  h2{font-family:var(--serif); font-weight:600; font-size:54px; line-height:1.02;
+    letter-spacing:-.015em; margin:18px 0 6px}
+  h2 em{font-style:italic; color:var(--adv); font-weight:500}
+  .lead{font-size:21px; color:var(--muted); font-weight:300; max-width:60ch; line-height:1.5}
+  .bullets{list-style:none; display:flex; flex-direction:column; gap:16px; margin-top:8px}
+  .bullets li{font-size:20px; line-height:1.45; color:#cdd2e0; padding-left:26px; position:relative; max-width:48ch}
+  .bullets li::before{content:""; position:absolute; left:0; top:11px; width:9px; height:9px;
+    background:var(--clean); transform:rotate(45deg)}
+  .bullets li b{color:var(--ink); font-weight:600}
+  .foot{position:absolute; left:88px; right:88px; bottom:34px;
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:var(--mono); font-size:12.5px; color:var(--faint); letter-spacing:.05em}
+  .foot .bar{flex:1; height:1px; background:linear-gradient(90deg,var(--line),transparent); margin:0 18px}
+
+  /* ---------------- components ---------------- */
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:38px; align-items:center; height:100%}
+  .grid-l{display:grid; grid-template-columns:.92fr 1.08fr; gap:46px; align-items:center; height:100%}
+  .stacktop{display:flex; flex-direction:column; gap:14px}
+
+  .metrics{display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin-top:40px}
+  .metric{background:linear-gradient(160deg,var(--panel2),var(--panel));
+    border:1px solid rgba(255,255,255,.07); border-radius:18px; padding:30px 28px 26px;
+    position:relative; overflow:hidden}
+  .metric::before{content:""; position:absolute; inset:0 auto 0 0; width:4px; background:var(--accent,var(--adv))}
+  .metric .num{font-family:var(--serif); font-weight:900; font-size:74px; line-height:.9;
+    color:var(--accent,var(--adv)); letter-spacing:-.03em}
+  .metric .lbl{margin-top:14px; font-size:16px; color:var(--muted); line-height:1.35; max-width:22ch}
+  .metric .tag{font-family:var(--mono); font-size:11.5px; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--faint); margin-bottom:14px}
+
+  .cards2{display:grid; grid-template-columns:1fr 1fr; gap:30px; margin-top:30px}
+  .ccard{border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:30px;
+    background:linear-gradient(160deg,var(--panel2),var(--panel)); position:relative}
+  .ccard h3{font-family:var(--serif); font-size:28px; font-weight:600; margin-bottom:12px; color:var(--accent)}
+  .ccard p{font-size:17px; color:var(--muted); line-height:1.5}
+  .ccard .mono{font-family:var(--mono); color:var(--ink); font-size:15px}
+
+  .chips{display:flex; flex-wrap:wrap; gap:10px; margin-top:6px}
+  .chip{font-family:var(--mono); font-size:13px; padding:8px 13px; border-radius:999px;
+    border:1px solid rgba(255,255,255,.12); color:#c3c9da; background:rgba(255,255,255,.02); white-space:nowrap}
+  .chip small{color:var(--faint); margin-left:7px}
+  .chip.adv{border-color:rgba(255,77,104,.45); color:#ffd3da}
+  .chip.mint{border-color:rgba(54,231,196,.4); color:#bff4ea}
+
+  .litcols{display:grid; grid-template-columns:repeat(3,1fr); gap:30px; margin-top:34px}
+  .litcol h4{font-family:var(--mono); font-size:13px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--ink); margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,.1)}
+  .litcol h4 .dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:9px; vertical-align:middle}
+  .litcol ul{list-style:none; display:flex; flex-direction:column; gap:13px}
+  .litcol li{font-size:15.5px; color:#cdd2e0; line-height:1.3}
+  .litcol li span{font-family:var(--mono); font-size:11.5px; color:var(--faint); display:block; margin-top:3px}
+
+  /* exhibit (image on light specimen card) */
+  .exhibit{background:#f6f6f1; border-radius:14px; padding:16px;
+    box-shadow:0 30px 80px -30px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.06);
+    position:relative}
+  .exhibit img{width:100%; display:block; border-radius:6px}
+  .exhibit .tape{position:absolute; top:-12px; left:50%; transform:translateX(-50%);
+    font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase;
+    color:#0a0a0a; background:var(--amber); padding:5px 16px; border-radius:4px}
+  .cap{font-family:var(--mono); font-size:13px; color:var(--muted); margin-top:16px; letter-spacing:.03em}
+
+  .callout{margin-top:26px; padding:18px 22px; border-left:3px solid var(--accent,var(--clean));
+    background:linear-gradient(90deg,rgba(54,231,196,.08),transparent); border-radius:0 12px 12px 0;
+    font-size:18px; color:var(--ink); line-height:1.45}
+  .callout b{color:var(--accent,var(--clean))}
+
+  /* charts */
+  svg.chart{width:100%; height:auto; overflow:visible}
+  .ax{stroke:rgba(255,255,255,.14); stroke-width:1}
+  .axg{stroke:var(--line); stroke-width:1}
+  .axlbl{fill:var(--faint); font-family:var(--mono); font-size:13px}
+  .axttl{fill:var(--muted); font-family:var(--mono); font-size:12px; letter-spacing:.15em; text-transform:uppercase}
+  .ln{fill:none; stroke-width:3.5; stroke-linejoin:round; stroke-linecap:round;
+    stroke-dasharray:2600; stroke-dashoffset:0}
+  .slide.active .ln{animation:draw 1.3s ease forwards}
+  @keyframes draw{from{stroke-dashoffset:2600}to{stroke-dashoffset:0}}
+  .mk{stroke:var(--bg); stroke-width:2}
+  .bar{transform-box:fill-box; transform-origin:bottom; transform:scaleY(1)}
+  .slide.active .bar{animation:grow .9s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+  .blbl{font-family:var(--mono); font-size:13px; font-weight:700}
+  .dot{opacity:1}
+  .legend{display:flex; gap:22px; font-family:var(--mono); font-size:13px; color:var(--muted); margin-bottom:6px}
+  .legend i{display:inline-block; width:14px; height:14px; border-radius:3px; margin-right:7px; vertical-align:-2px}
+
+  .pipe{display:flex; align-items:center; gap:0; margin-top:18px; width:100%}
+  .node{border:1px solid rgba(255,255,255,.14); border-radius:12px; padding:16px 18px;
+    background:linear-gradient(160deg,var(--panel2),var(--panel)); text-align:center; min-width:120px}
+  .node .t{font-family:var(--mono); font-size:11px; letter-spacing:.15em; text-transform:uppercase; color:var(--faint)}
+  .node .v{font-size:16px; margin-top:6px; color:var(--ink)}
+  .arrow{flex:0 0 46px; height:2px; background:linear-gradient(90deg,var(--faint),var(--adv)); position:relative}
+  .arrow::after{content:""; position:absolute; right:-1px; top:-4px; border:5px solid transparent; border-left-color:var(--adv)}
+  .branch{display:flex; flex-direction:column; gap:12px}
+  .branch .node{min-width:240px; text-align:left; border-left:3px solid var(--accent)}
+
+  /* cover */
+  .ghost{position:absolute; right:-40px; top:50%; transform:translateY(-50%);
+    font-family:var(--serif); font-style:italic; font-weight:500; font-size:680px; line-height:1;
+    color:rgba(255,77,104,.06); z-index:0; pointer-events:none}
+  #cover .meta{position:absolute; left:88px; bottom:120px; display:flex; gap:34px; align-items:flex-end}
+  #cover .meta .who{font-size:23px; font-weight:600}
+  #cover .meta .sub{font-family:var(--mono); font-size:13px; color:var(--muted); letter-spacing:.05em; line-height:1.7}
+
+  /* chrome / nav */
+  #prog{position:fixed; top:0; left:0; height:3px; background:linear-gradient(90deg,var(--clean),var(--adv));
+    z-index:50; transition:width .4s ease}
+  #counter{position:fixed; right:26px; bottom:20px; z-index:50; font-family:var(--mono);
+    font-size:13px; color:var(--muted); letter-spacing:.1em}
+  #counter b{color:var(--ink)}
+  #hint{position:fixed; left:26px; bottom:20px; z-index:50; font-family:var(--mono);
+    font-size:12px; color:var(--faint); letter-spacing:.08em}
+
+  @media print{
+    @page{size:1280px 720px; margin:0}
+    html,body{overflow:visible}
+    #deck{position:static}
+    #prog,#counter,#hint{display:none!important}
+    .slide{position:relative!important; left:auto!important; top:auto!important;
+      transform:none!important; opacity:1!important; visibility:visible!important;
+      page-break-after:always; break-after:page; margin:0}
+    .r{opacity:1!important; transform:none!important}
+    .ln{stroke-dashoffset:0!important; animation:none!important}
+    .bar{transform:scaleY(1)!important; animation:none!important}
+    .slide::after{display:none!important}   /* drop grain in print -> tiny PDF */
+  }
+</style>
+</head>
+<body>
+<div id="prog"></div>
+<div id="deck">
+
+  <!-- 1 · COVER -->
+  <section class="slide active" id="cover">
+    <div class="ghost">δ</div>
+    <div class="kicker r" style="--d:.05s">Mini Research Problem</div>
+    <h1 class="r" style="--d:.15s; font-size:118px; margin-top:60px">Do explanations<br><em style="font-style:italic;color:var(--adv);font-weight:500">survive attacks?</em></h1>
+    <p class="lead r" style="--d:.3s; margin-top:30px; font-size:24px; max-width:none">Adversarial robustness of saliency-based interpretability</p>
+    <div class="chips r" style="--d:.42s; margin-top:26px">
+      <span class="chip adv">Lecture 07 · Robustness</span>
+      <span class="chip" style="border:none;color:var(--faint)">✕</span>
+      <span class="chip mint">Lecture 09 · Interpretability</span>
+    </div>
+    <div class="meta">
+      <div class="who r" style="--d:.55s">Jagrat Shrivastav<br>
+        <span style="font-family:var(--mono);font-size:13px;color:var(--muted);font-weight:400">AI Introductory Course · Sofia University</span></div>
+      <div class="sub r" style="--d:.62s">MODEL ResNet-50 / ImageNet<br>SAMPLE 12 images · CPU/MPS · ~40s<br>INSTRUCTOR A. Petiushko</div>
+    </div>
+  </section>
+
+  <!-- 2 · TL;DR -->
+  <section class="slide">
+    <div class="kicker r">TL;DR</div>
+    <h2 class="r" style="--d:.08s">Invisible noise breaks the prediction <em>and</em><br>its explanation — yet the break betrays the attack.</h2>
+    <div class="metrics">
+      <div class="metric r" style="--d:.2s; --accent:var(--adv)">
+        <div class="tag">Experiment A</div><div class="num">100%</div>
+        <div class="lbl">of predictions flipped by PGD at an invisible budget</div></div>
+      <div class="metric r" style="--d:.32s; --accent:var(--amber)">
+        <div class="tag">Experiment B</div><div class="num">0.22</div>
+        <div class="lbl">of the explanation survives the attack (top-10% IoU)</div></div>
+      <div class="metric r" style="--d:.44s; --accent:var(--clean)">
+        <div class="tag">Experiment C</div><div class="num">0.91</div>
+        <div class="lbl">ROC-AUC detecting the attack from its own fragility</div></div>
+    </div>
+    <div class="foot"><span>Adversarial Attacks vs. Explanations</span><span class="bar"></span><span>02</span></div>
+  </section>
+
+  <!-- 3 · PREMISE -->
+  <section class="slide">
+    <div class="kicker mint r">The set-up</div>
+    <h2 class="r" style="--d:.08s">Two ideas, one collision</h2>
+    <div class="cards2">
+      <div class="ccard r" style="--d:.2s; --accent:var(--adv)">
+        <h3>Adversarial example</h3>
+        <p class="mono">x′ = x + δ , ‖δ‖∞ ≤ ε</p>
+        <p style="margin-top:10px">A perturbation too small for a human to see — yet the model misreads it with high confidence. <i>(Lecture 07)</i></p>
+      </div>
+      <div class="ccard r" style="--d:.34s; --accent:var(--clean)">
+        <h3>Saliency explanation</h3>
+        <p class="mono">Grad-CAM · Integrated Gradients</p>
+        <p style="margin-top:10px">A heatmap claiming <i>these</i> pixels drove the decision — shipped to make models trustworthy. <i>(Lecture 09)</i></p>
+      </div>
+    </div>
+    <div class="callout r" style="--d:.5s; --accent:var(--amber)">If δ is invisible, does the explanation still tell the truth — and <b>can its failure warn us?</b></div>
+    <div class="foot"><span>The research question</span><span class="bar"></span><span>03</span></div>
+  </section>
+
+  <!-- 4 · LITERATURE -->
+  <section class="slide">
+    <div class="kicker r">Literature</div>
+    <h2 class="r" style="--d:.08s">What this builds on</h2>
+    <div class="litcols">
+      <div class="litcol r" style="--d:.2s">
+        <h4><span class="dot" style="background:var(--adv)"></span>Attacks</h4>
+        <ul>
+          <li>Szegedy et al. — adversarial examples<span>2014 · arXiv:1312.6199</span></li>
+          <li>Goodfellow et al. — FGSM<span>2015 · arXiv:1412.6572</span></li>
+          <li>Madry et al. — PGD + adv. training<span>2018 · arXiv:1706.06083</span></li>
+          <li>Carlini &amp; Wagner — C&amp;W attack<span>2017 · arXiv:1608.04644</span></li>
+        </ul>
+      </div>
+      <div class="litcol r" style="--d:.32s">
+        <h4><span class="dot" style="background:var(--clean)"></span>Explanations</h4>
+        <ul>
+          <li>Simonyan et al. — gradient saliency<span>2014 · arXiv:1312.6034</span></li>
+          <li>Selvaraju et al. — Grad-CAM<span>2017 · arXiv:1610.02391</span></li>
+          <li>Sundararajan et al. — Integrated Gradients<span>2017 · arXiv:1703.01365</span></li>
+        </ul>
+      </div>
+      <div class="litcol r" style="--d:.44s">
+        <h4><span class="dot" style="background:var(--amber)"></span>Fragility &amp; detection</h4>
+        <ul>
+          <li>Ghorbani et al. — interpretation is fragile<span>2019 · arXiv:1710.10547</span></li>
+          <li>Kindermans et al. — (un)reliable saliency<span>2019 · arXiv:1711.00867</span></li>
+          <li>Xu et al. — feature squeezing<span>2018 · arXiv:1704.01155</span></li>
+          <li>Carlini &amp; Wagner — detectors bypassed<span>2017 · arXiv:1705.07263</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot"><span>Related work</span><span class="bar"></span><span>04</span></div>
+  </section>
+
+  <!-- 5 · APPROACH -->
+  <section class="slide">
+    <div class="kicker amber r">Method</div>
+    <h2 class="r" style="--d:.08s">One image, three questions</h2>
+    <div class="pipe r" style="--d:.24s">
+      <div class="node" style="--accent:var(--clean)"><div class="t">Input</div><div class="v">ImageNet image</div></div>
+      <div class="arrow"></div>
+      <div class="node" style="--accent:var(--adv)"><div class="t">Attack</div><div class="v">FGSM · PGD&nbsp;(L∞)</div></div>
+      <div class="arrow"></div>
+      <div class="branch">
+        <div class="node" style="--accent:var(--adv)"><div class="t">Q1 · Robustness</div><div class="v">Does the prediction flip?</div></div>
+        <div class="node" style="--accent:var(--amber)"><div class="t">Q2 · Interpretability</div><div class="v">Does the saliency map move?</div></div>
+        <div class="node" style="--accent:var(--clean)"><div class="t">Q3 · Defense</div><div class="v">Noise-instability detector</div></div>
+      </div>
+    </div>
+    <div class="chips r" style="--d:.46s; margin-top:34px">
+      <span class="chip">PyTorch</span><span class="chip">torchvision</span>
+      <span class="chip">Captum <small>IG</small></span><span class="chip">scikit-learn <small>AUC</small></span>
+      <span class="chip mint">FGSM · PGD · Grad-CAM from scratch</span>
+    </div>
+    <div class="foot"><span>Approach &amp; implementation</span><span class="bar"></span><span>05</span></div>
+  </section>
+
+  <!-- 6 · RESULT A -->
+  <section class="slide">
+    <div class="grid-l">
+      <div class="stacktop">
+        <div class="kicker r">Experiment A · Attacks</div>
+        <h2 class="r" style="--d:.08s; font-size:46px">Invisible noise,<br>broken labels</h2>
+        <ul class="bullets r" style="--d:.2s">
+          <li><b>PGD</b> climbs to <b>100%</b> success as ε grows</li>
+          <li>One-step <b>FGSM</b> stalls near 17%</li>
+          <li>ε = 0 → 0% &nbsp;<span style="color:var(--faint)">(sanity check)</span></li>
+        </ul>
+        <div class="callout r" style="--d:.34s; --accent:var(--adv)">Budget stays <b>imperceptible</b> — a few /255.</div>
+      </div>
+      <div class="r" style="--d:.28s">
+        <div class="legend"><span><i style="background:var(--adv)"></i>PGD (10 steps)</span><span><i style="background:var(--amber)"></i>FGSM (1 step)</span></div>
+        <svg class="chart" viewBox="0 0 660 410">
+          <!-- gridlines + y labels -->
+          <g>
+            <line class="axg" x1="70" y1="40"  x2="640" y2="40"/>
+            <line class="axg" x1="70" y1="120" x2="640" y2="120"/>
+            <line class="axg" x1="70" y1="200" x2="640" y2="200"/>
+            <line class="axg" x1="70" y1="280" x2="640" y2="280"/>
+            <line class="ax"  x1="70" y1="360" x2="640" y2="360"/>
+            <line class="ax"  x1="70" y1="40"  x2="70"  y2="360"/>
+            <text class="axlbl" x="58" y="44"  text-anchor="end">100</text>
+            <text class="axlbl" x="58" y="124" text-anchor="end">75</text>
+            <text class="axlbl" x="58" y="204" text-anchor="end">50</text>
+            <text class="axlbl" x="58" y="284" text-anchor="end">25</text>
+            <text class="axlbl" x="58" y="364" text-anchor="end">0</text>
+            <text class="axttl" x="20" y="200" transform="rotate(-90 20 200)" text-anchor="middle">attack success %</text>
+          </g>
+          <!-- x labels -->
+          <g class="axlbl" text-anchor="middle">
+            <text x="70" y="384">0</text><text x="180" y="384">1/255</text>
+            <text x="290" y="384">2/255</text><text x="400" y="384">4/255</text>
+            <text x="510" y="384">8/255</text><text x="620" y="384">16/255</text>
+            <text class="axttl" x="355" y="404" text-anchor="middle">perturbation budget ε (L∞)</text>
+          </g>
+          <!-- FGSM -->
+          <polyline class="ln" style="stroke:var(--amber)" points="70,360 180,306.7 290,306.7 400,306.7 510,306.7 620,280"/>
+          <!-- PGD -->
+          <polyline class="ln" style="stroke:var(--adv)" points="70,360 180,226.7 290,120 400,93.3 510,66.7 620,40"/>
+          <g class="mk" fill="var(--adv)">
+            <circle cx="70" cy="360" r="5"/><circle cx="180" cy="226.7" r="5"/><circle cx="290" cy="120" r="5"/>
+            <circle cx="400" cy="93.3" r="5"/><circle cx="510" cy="66.7" r="5"/><circle cx="620" cy="40" r="5"/>
+          </g>
+          <g class="mk" fill="var(--amber)">
+            <circle cx="180" cy="306.7" r="4"/><circle cx="290" cy="306.7" r="4"/><circle cx="400" cy="306.7" r="4"/>
+            <circle cx="510" cy="306.7" r="4"/><circle cx="620" cy="280" r="4"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="foot"><span>Result A — attacks succeed</span><span class="bar"></span><span>06</span></div>
+  </section>
+
+  <!-- 7 · RESULT B hero -->
+  <section class="slide">
+    <div class="kicker r">Experiment B · Perception</div>
+    <h2 class="r" style="--d:.08s; font-size:46px">Same picture. <em>Different label.</em></h2>
+    <div class="grid2" style="height:auto; margin-top:14px; align-items:start">
+      <div class="exhibit r" style="--d:.22s">
+        <div class="tape">Specimen · giant panda</div>
+        <img src="figures/fig_hero.png" alt="panda triptych: clean, perturbation x10, adversarial">
+      </div>
+      <div class="r" style="--d:.34s">
+        <p class="lead" style="font-size:19px; margin-bottom:18px">A perturbation amplified ×10 just looks like static — at scale 1 it is invisible. The model is sure it sees something else entirely:</p>
+        <div class="chips">
+          <span class="chip adv">panda → tennis ball</span>
+          <span class="chip adv">flamingo → spider web <small>99.8%</small></span>
+          <span class="chip adv">retriever → malinois <small>99.6%</small></span>
+          <span class="chip adv">tabby → paper towel <small>92.7%</small></span>
+          <span class="chip adv">goldfish → digital clock</span>
+        </div>
+        <div class="callout" style="--accent:var(--adv); margin-top:22px">All at <b>L∞ = 0.016</b> — the same imperceptible budget.</div>
+      </div>
+    </div>
+    <div class="foot"><span>Result B — the model is fooled</span><span class="bar"></span><span>07</span></div>
+  </section>
+
+  <!-- 8 · RESULT B grid -->
+  <section class="slide" style="padding:46px 70px 0">
+    <div class="kicker amber r">Experiment B · Explanations</div>
+    <h2 class="r" style="--d:.08s; font-size:38px; margin:8px 0 2px">The heatmap slides off the object</h2>
+    <div style="text-align:center">
+      <div class="exhibit r" style="--d:.22s; display:inline-block; padding:10px; margin-top:6px">
+        <img src="figures/fig_explanations_break.png" style="max-height:478px; width:auto" alt="Grad-CAM clean vs adversarial for three images">
+      </div>
+    </div>
+    <p class="cap r" style="--d:.36s; text-align:center; margin-top:10px">Grad-CAM for the <i>original</i> class — before vs. after an imperceptible attack. The explanation no longer points at the evidence.</p>
+    <div class="foot"><span>Result B — explanations relocate</span><span class="bar"></span><span>08</span></div>
+  </section>
+
+  <!-- 9 · RESULT B quant -->
+  <section class="slide">
+    <div class="grid-l">
+      <div class="stacktop">
+        <div class="kicker amber r">Experiment B · Magnitude</div>
+        <h2 class="r" style="--d:.08s; font-size:46px">How much<br>survives? <em>Barely any.</em></h2>
+        <ul class="bullets r" style="--d:.2s">
+          <li>Similarity of clean vs. adversarial maps — <b>1.0 = unchanged</b></li>
+          <li>Both methods collapse on region overlap</li>
+        </ul>
+        <div class="callout r" style="--d:.34s; --accent:var(--amber)">Only <b>~22%</b> of the top-salient region survives<br><span style="color:var(--muted);font-size:15px">Grad-CAM IoU 0.22 · IG 0.23</span></div>
+      </div>
+      <div class="r" style="--d:.28s">
+        <div class="legend"><span><i style="background:var(--clean)"></i>Grad-CAM</span><span><i style="background:var(--amber)"></i>Integrated Gradients</span></div>
+        <svg class="chart" viewBox="0 0 660 410">
+          <line class="axg" x1="70" y1="40" x2="640" y2="40" stroke-dasharray="5 5"/>
+          <text class="axlbl" x="648" y="44">1.0 unchanged</text>
+          <line class="axg" x1="70" y1="200" x2="640" y2="200"/>
+          <line class="ax"  x1="70" y1="360" x2="640" y2="360"/>
+          <text class="axlbl" x="58" y="204" text-anchor="end">.5</text>
+          <text class="axlbl" x="58" y="364" text-anchor="end">0</text>
+          <!-- cosine -->
+          <rect class="bar" x="104" y="149.4" width="44" height="210.6" fill="var(--clean)" style="animation-delay:.1s"/>
+          <rect class="bar" x="154" y="147.8" width="44" height="212.2" fill="var(--amber)" style="animation-delay:.16s"/>
+          <text class="blbl" x="126" y="139" fill="var(--clean)" text-anchor="middle">.66</text>
+          <text class="blbl" x="176" y="133" fill="var(--amber)" text-anchor="middle">.66</text>
+          <text class="axlbl" x="151" y="384" text-anchor="middle">cosine</text>
+          <!-- spearman -->
+          <rect class="bar" x="284" y="206.4" width="44" height="153.6" fill="var(--clean)" style="animation-delay:.22s"/>
+          <rect class="bar" x="334" y="170.2" width="44" height="189.8" fill="var(--amber)" style="animation-delay:.28s"/>
+          <text class="blbl" x="306" y="196" fill="var(--clean)" text-anchor="middle">.48</text>
+          <text class="blbl" x="356" y="160" fill="var(--amber)" text-anchor="middle">.59</text>
+          <text class="axlbl" x="331" y="384" text-anchor="middle">Spearman rank</text>
+          <!-- IoU -->
+          <rect class="bar" x="464" y="290.6" width="44" height="69.4" fill="var(--clean)" style="animation-delay:.34s"/>
+          <rect class="bar" x="514" y="288" width="44" height="72" fill="var(--amber)" style="animation-delay:.4s"/>
+          <text class="blbl" x="486" y="280" fill="var(--clean)" text-anchor="middle">.22</text>
+          <text class="blbl" x="536" y="278" fill="var(--amber)" text-anchor="middle">.23</text>
+          <text class="axlbl" x="511" y="384" text-anchor="middle">top-10% IoU</text>
+        </svg>
+      </div>
+    </div>
+    <div class="foot"><span>Result B — quantified fragility</span><span class="bar"></span><span>09</span></div>
+  </section>
+
+  <!-- 10 · RESULT C -->
+  <section class="slide">
+    <div class="kicker mint r">Experiment C · Defense</div>
+    <h2 class="r" style="--d:.08s; font-size:46px">Fragility becomes a <em style="color:var(--clean);font-style:italic">detector</em></h2>
+    <div class="grid2" style="height:auto; margin-top:18px; align-items:center">
+      <div class="r" style="--d:.22s">
+        <div class="legend"><span><i style="background:var(--clean)"></i>clean</span><span><i style="background:var(--adv)"></i>adversarial</span></div>
+        <svg class="chart" viewBox="0 0 380 360" style="max-height:320px">
+          <line class="ax"  x1="60" y1="40" x2="60" y2="300"/>
+          <line class="axg" x1="60" y1="40"  x2="360" y2="40"/>
+          <line class="axg" x1="60" y1="170" x2="360" y2="170"/>
+          <line class="ax"  x1="60" y1="300" x2="360" y2="300"/>
+          <text class="axlbl" x="50" y="44"  text-anchor="end">1.0</text>
+          <text class="axlbl" x="50" y="174" text-anchor="end">0.5</text>
+          <text class="axlbl" x="50" y="304" text-anchor="end">0</text>
+          <text class="axttl" x="18" y="170" transform="rotate(-90 18 170)" text-anchor="middle">instability</text>
+          <text class="axlbl" x="140" y="324" text-anchor="middle">clean</text>
+          <text class="axlbl" x="270" y="324" text-anchor="middle">adversarial</text>
+          <!-- clean: 11 at 0, 1 at .875 -->
+          <g fill="var(--clean)" class="dot">
+            <circle cx="118" cy="300" r="6"/><circle cx="132" cy="300" r="6"/><circle cx="146" cy="300" r="6"/>
+            <circle cx="160" cy="300" r="6"/><circle cx="125" cy="289" r="6"/><circle cx="139" cy="289" r="6"/>
+            <circle cx="153" cy="289" r="6"/><circle cx="118" cy="278" r="6"/><circle cx="132" cy="278" r="6"/>
+            <circle cx="146" cy="278" r="6"/><circle cx="160" cy="278" r="6"/>
+            <circle cx="140" cy="73" r="6" opacity=".95"/>
+          </g>
+          <!-- adv: 9 at 1, 1 at .969, 2 at 0 -->
+          <g fill="var(--adv)" class="dot">
+            <circle cx="248" cy="40" r="6"/><circle cx="262" cy="40" r="6"/><circle cx="276" cy="40" r="6"/>
+            <circle cx="255" cy="51" r="6"/><circle cx="269" cy="51" r="6"/><circle cx="283" cy="51" r="6"/>
+            <circle cx="248" cy="62" r="6"/><circle cx="262" cy="62" r="6"/><circle cx="276" cy="62" r="6"/>
+            <circle cx="269" cy="50" r="6"/>
+            <circle cx="256" cy="300" r="6" opacity=".95"/><circle cx="276" cy="300" r="6" opacity=".95"/>
+          </g>
+        </svg>
+      </div>
+      <div class="r" style="--d:.34s">
+        <svg class="chart" viewBox="0 0 320 320" style="max-height:300px">
+          <line class="ax" x1="50" y1="280" x2="290" y2="280"/>
+          <line class="ax" x1="50" y1="40"  x2="50"  y2="280"/>
+          <line class="axg" x1="50" y1="280" x2="290" y2="40" stroke-dasharray="5 5"/>
+          <polygon points="50,280 50,80 70,80 290,40 290,280" fill="rgba(54,231,196,.12)"/>
+          <polyline class="ln" style="stroke:var(--clean);stroke-dasharray:1400" points="50,280 50,80 70,80 290,40"/>
+          <text class="axlbl" x="50" y="300" text-anchor="middle">0</text>
+          <text class="axlbl" x="290" y="300" text-anchor="middle">1</text>
+          <text class="axttl" x="170" y="316" text-anchor="middle">false positive rate</text>
+          <text class="axttl" x="16" y="160" transform="rotate(-90 16 160)" text-anchor="middle">true positive</text>
+          <text x="200" y="150" fill="var(--clean)" font-family="var(--serif)" font-weight="900" font-size="58">0.91</text>
+          <text class="axlbl" x="202" y="178" fill="var(--muted)">ROC-AUC</text>
+        </svg>
+      </div>
+    </div>
+    <div class="callout r" style="--d:.46s; --accent:var(--clean)">Clean inputs barely move under noise (<b>0.07</b>); adversarial ones flip constantly (<b>0.83</b>).</div>
+    <div class="foot"><span>Result C — detecting the attack</span><span class="bar"></span><span>10</span></div>
+  </section>
+
+  <!-- 11 · DISCUSSION -->
+  <section class="slide">
+    <div class="kicker r">Caveats</div>
+    <h2 class="r" style="--d:.08s">Honest limits</h2>
+    <ul class="bullets r" style="--d:.2s; margin-top:28px; gap:22px; font-size:21px">
+      <li>Small sample — <b>12 images, one architecture</b></li>
+      <li>White-box, <b>L∞ attacks only</b>; detector is non-adaptive</li>
+      <li>Carlini &amp; Wagner (2017): an adversary who <i>knows</i> the detector can craft noise-robust attacks</li>
+      <li style="color:var(--clean)"><b>A hurdle, not a cure.</b></li>
+    </ul>
+    <div class="foot"><span>Discussion &amp; limitations</span><span class="bar"></span><span>11</span></div>
+  </section>
+
+  <!-- 12 · CONCLUSION -->
+  <section class="slide">
+    <div class="kicker mint r">Takeaway</div>
+    <h2 class="r" style="--d:.08s; font-size:50px">Attacks succeed · explanations break ·<br>the break is <em style="color:var(--clean);font-style:italic">detectable</em></h2>
+    <div class="metrics" style="margin-top:36px">
+      <div class="metric r" style="--d:.2s; --accent:var(--adv)"><div class="num">100%</div><div class="lbl">PGD attack success</div></div>
+      <div class="metric r" style="--d:.3s; --accent:var(--amber)"><div class="num">0.22</div><div class="lbl">explanation top-IoU retained</div></div>
+      <div class="metric r" style="--d:.4s; --accent:var(--clean)"><div class="num">0.91</div><div class="lbl">detector ROC-AUC</div></div>
+    </div>
+    <div class="callout r" style="--d:.5s; --accent:var(--clean)">One pipeline links <b>robustness (L07)</b> and <b>interpretability (L09)</b>. &nbsp;Next: ViT vs CNN · adaptive attacks · adversarial training.</div>
+    <div class="foot"><span>Conclusion &amp; future work</span><span class="bar"></span><span>12</span></div>
+  </section>
+
+  <!-- 13 · LINKS -->
+  <section class="slide" id="links">
+    <div class="ghost" style="color:rgba(54,231,196,.06)">∎</div>
+    <div class="kicker mint r">Reproduce</div>
+    <h2 class="r" style="--d:.08s">Code, demo &amp; references</h2>
+    <div class="r" style="--d:.22s; margin-top:30px; display:flex; flex-direction:column; gap:18px; font-family:var(--mono); font-size:18px">
+      <div><span style="color:var(--faint)">CODE&nbsp;&nbsp;&nbsp;</span> github.com/jagrat97/<b style="color:var(--clean)">adversarial-attacks-vs-explanations</b></div>
+      <div><span style="color:var(--faint)">DEMO&nbsp;&nbsp;&nbsp;</span> <span style="color:var(--adv)">▶</span> youtu.be/&lt;add-after-recording&gt;</div>
+      <div><span style="color:var(--faint)">RUN&nbsp;&nbsp;&nbsp;&nbsp;</span> python src/run_experiments.py</div>
+      <div><span style="color:var(--faint)">COURSE&nbsp;</span> github.com/fatheral/ai-intro-course</div>
+    </div>
+    <p class="r" style="--d:.4s; margin-top:34px; font-size:15px; color:var(--faint); max-width:80ch; line-height:1.6">
+      Goodfellow ’15 (FGSM) · Madry ’18 (PGD) · Selvaraju ’17 (Grad-CAM) · Sundararajan ’17 (Integrated Gradients) · Ghorbani ’19 (fragile interpretations) · Xu ’18 (feature squeezing) · Carlini &amp; Wagner ’17.
+    </p>
+    <h1 class="r" style="--d:.55s; font-size:64px; margin-top:34px; color:var(--ink)">Thank you<span style="color:var(--adv)">.</span></h1>
+    <div class="foot"><span>jagrat.shrivastav</span><span class="bar"></span><span>13</span></div>
+  </section>
+
+</div>
+
+<div id="counter"><b>01</b> / 13</div>
+<div id="hint">← → / SPACE · F fullscreen</div>
+
+<script>
+  const deck = document.getElementById('deck');
+  const slides = [...deck.querySelectorAll('.slide')];
+  const prog = document.getElementById('prog');
+  const counter = document.getElementById('counter');
+  let i = 0;
+
+  function fit(){
+    const s = Math.min(window.innerWidth/1280, window.innerHeight/720);
+    document.documentElement.style.setProperty('--s', s);
+  }
+  function show(n){
+    i = Math.max(0, Math.min(slides.length-1, n));
+    slides.forEach((s,k)=>s.classList.toggle('active', k===i));
+    prog.style.width = ((i+1)/slides.length*100)+'%';
+    counter.innerHTML = '<b>'+String(i+1).padStart(2,'0')+'</b> / '+slides.length;
+    location.hash = i+1;
+  }
+  function next(){ show(i+1) } function prev(){ show(i-1) }
+
+  addEventListener('keydown', e=>{
+    if(['ArrowRight','ArrowDown',' ','PageDown'].includes(e.key)){ e.preventDefault(); next(); }
+    else if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){ e.preventDefault(); prev(); }
+    else if(e.key==='Home'){ show(0); } else if(e.key==='End'){ show(slides.length-1); }
+    else if(e.key==='f'||e.key==='F'){ document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen(); }
+  });
+  deck.addEventListener('click', e=>{ (e.clientX < innerWidth*0.32) ? prev() : next(); });
+  addEventListener('resize', fit);
+  fit();
+  const start = parseInt(location.hash.slice(1)); show(Number.isInteger(start)&&start>0 ? start-1 : 0);
+</script>
+</body>
+</html>
