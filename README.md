@@ -8,7 +8,7 @@ A self-contained study that **bridges two course lectures** — *Lecture 07 (Rob
 
 > When an imperceptible adversarial perturbation fools an image classifier, what happens to the **explanation** of its decision — and can the explanation's own fragility be used to **detect** the attack?
 
-🖥️ **Slide deck (live):** **https://jagrat97.github.io/adversarial-attacks-vs-explanations/** · 🎥 **Demo video:** *(add link)* · 🧪 **Reproduce:** `python src/run_experiments.py`
+🖥️ **Slide deck (live):** **https://jagrat97.github.io/adversarial-attacks-vs-explanations/** · 📄 **PDF:** [`slides.pdf`](slides.pdf) · 🎥 **Demo video:** **https://youtu.be/lAmMayGBdh4** · 🧪 **Reproduce:** `python src/run_experiments.py`
 
 > The deck is a single self-contained `index.html` (custom slide engine — arrow keys to navigate, `F` for fullscreen). Open it locally or use the live link above.
 
