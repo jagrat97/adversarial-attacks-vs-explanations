@@ -15,6 +15,7 @@ import sys
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import torch
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import attacks
@@ -48,8 +49,10 @@ def main():
     ap.add_argument("--eps", default="4/255", help="L-inf budget, e.g. 4/255 or 0.016")
     ap.add_argument("--steps", type=int, default=10)
     ap.add_argument("--sigma", type=float, default=0.05)
+    ap.add_argument("--seed", type=int, default=0, help="fixed for reproducible demos")
     ap.add_argument("--out", default=os.path.join(HERE, "figures", "demo.png"))
     args = ap.parse_args()
+    torch.manual_seed(args.seed)
     eps = parse_eps(args.eps)
 
     device = data.get_device()
